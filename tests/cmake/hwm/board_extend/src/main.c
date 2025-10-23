@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2024 Nordic Semiconductor ASA
+ * Copyright (c) 2025 Meta Platforms, Inc. and affiliates
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -83,3 +84,42 @@ ZTEST(soc_board_extend, test_failure)
 	zassert_true(false, "Did not expect to build for a regular board");
 #endif
 }
+
+#if CONFIG_BOARD_NATIVE_SIM_NATIVE_64_TWO
+ZTEST(soc_board_extend, test_qualifier_matching)
+{
+	// My interpretation of the documentation [here](https://docs.zephyrproject.org/latest/hardware/porting/board_porting.html#write-kconfig-files)
+	// is that the the defconfig files should be matched with native_sim_defconfig, as well as each file getting more specific with each qualifier
+	// (e.g. native_sim_defconfig, native_sim_native_defconfig, native_sim_native_64_defconfig, native_sim_native_64_two_defconfig)
+	//
+	// > If both the common plank_defconfig file and one or more board qualifiers specific plank_<qualifiers>_defconfig files exist, then all matching files will be used.
+	// > This allows you to place configuration which is common for all board SoCs, CPU clusters, and board variants in the base plank_defconfig and only place the
+	// > adjustments specific for a given SoC or board variant in the plank_<qualifiers>_defconfig.
+	//
+	// Depending on your interpretation of the documentation, the you may have a different opinion on
+	// which configs with "intermediate" qualifiers should be included... However, I would consistently
+	// expect `CONFIG_SET_BY_NATIVE_SIM` to be true regardless of interpretation of docs.
+
+	// success
+	zexpect_false(IS_ENABLED(CONFIG_SET_BY_NATIVE));
+
+	// failure - native_sim_defconfig is surprisingly not used
+	// "This allows you to place configuration which is common for all board SoCs, CPU clusters, and board variants in the base plank_defconfig"
+	zexpect_true(IS_ENABLED(CONFIG_SET_BY_NATIVE_SIM));
+
+	// failure - native_sim_native_defconfig is surprisingly not used
+	zexpect_true(IS_ENABLED(CONFIG_SET_BY_NATIVE_SIM_NATIVE));
+
+	// failure - native_sim_native_64_defconfig is surprisingly not used
+	zexpect_true(IS_ENABLED(CONFIG_SET_BY_NATIVE_SIM_NATIVE_64));
+
+	// success - but surprised that *only* the most specific defconfig file is used
+	zexpect_true(IS_ENABLED(CONFIG_SET_BY_NATIVE_SIM_NATIVE_64_TWO));
+
+	// success
+	zexpect_false(IS_ENABLED(CONFIG_SET_BY_NATIVE_SIM_NATIVE_32_TWO));
+
+	// success
+	zexpect_false(IS_ENABLED(CONFIG_SET_BY_NATIVE_SI)); // intentionally missing 'M'
+}
+#endif

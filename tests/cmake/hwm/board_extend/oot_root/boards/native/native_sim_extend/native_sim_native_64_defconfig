@@ -1,0 +1,4 @@
+# Copyright (c) 2025 Meta Platforms, Inc. and affiliates
+# SPDX-License-Identifier: Apache-2.0
+
+CONFIG_SET_BY_NATIVE_SIM_NATIVE_64=y
