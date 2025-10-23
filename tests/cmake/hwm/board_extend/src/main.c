@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2024 Nordic Semiconductor ASA
+ * Copyright (c) 2025 Meta Platforms, Inc. and affiliates
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -83,3 +84,18 @@ ZTEST(soc_board_extend, test_failure)
 	zassert_true(false, "Did not expect to build for a regular board");
 #endif
 }
+
+#if CONFIG_BOARD_NATIVE_SIM_NATIVE_64_TWO
+ZTEST(soc_board_extend, test_qualifier_matching)
+{
+	// according to the documentation [here](https://docs.zephyrproject.org/latest/hardware/porting/board_porting.html#write-kconfig-files)
+	// the defconfig files should be matched with native_sim_defconfig, as well as each file getting more specific with each qualifier
+	// (e.g. native_sim_native_defconfig, native_sim_native_64_defconfig, native_sim_native_64_two_defconfig)
+	zexpect_false(IS_ENABLED(CONFIG_SET_BY_NATIVE));
+	zexpect_true(IS_ENABLED(CONFIG_SET_BY_NATIVE_SIM_NATIVE));
+	zexpect_true(IS_ENABLED(CONFIG_SET_BY_NATIVE_SIM_NATIVE_64));
+	zexpect_true(IS_ENABLED(CONFIG_SET_BY_NATIVE_SIM_NATIVE_64_TWO));
+	zexpect_false(IS_ENABLED(CONFIG_SET_BY_NATIVE_SIM_NATIVE_32_TWO));
+	zexpect_false(IS_ENABLED(CONFIG_SET_BY_NATIVE_SI)); // intentionally missing 'M'
+}
+#endif

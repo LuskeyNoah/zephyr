@@ -1716,14 +1716,22 @@ function(zephyr_build_string outvar)
   string(REPLACE "/" ";" str_segment_list "${BUILD_STR_BOARD_QUALIFIERS}")
   string(REPLACE "." "_" revision_string "${BUILD_STR_BOARD_REVISION}")
 
-  string(JOIN "_" ${outvar} ${BUILD_STR_BOARD} ${str_segment_list} ${revision_string})
+  string(JOIN "_" full_string ${BUILD_STR_BOARD} ${str_segment_list} ${revision_string})
 
   if(BUILD_STR_MERGE)
-    string(JOIN "_" variant_string ${BUILD_STR_BOARD} ${str_segment_list})
-
-    if(NOT "${variant_string}" IN_LIST ${outvar})
-      list(APPEND ${outvar} "${variant_string}")
-    endif()
+    # Build progressive list: base board name, then incrementally add qualifiers
+    # Example: native_sim -> native_sim_native -> native_sim_native_64 -> native_sim_native_64_two
+    list(APPEND ${outvar} "${BUILD_STR_BOARD}")
+    set(progressive "${BUILD_STR_BOARD}")
+    foreach(segment ${str_segment_list})
+      string(JOIN "_" progressive ${progressive} ${segment})
+      if(NOT "${progressive}" STREQUAL "${full_string}")
+        list(APPEND ${outvar} "${progressive}")
+      endif()
+    endforeach()
+    list(APPEND ${outvar} "${full_string}")
+  else()
+    set(${outvar} "${full_string}")
   endif()
 
   if(BUILD_STR_REVERSE)
@@ -1734,15 +1742,21 @@ function(zephyr_build_string outvar)
   if(BUILD_STR_SHORT AND BUILD_STR_BOARD_QUALIFIERS)
     string(REGEX REPLACE "^/[^/]*(.*)" "\\1" shortened_qualifiers "${BOARD_QUALIFIERS}")
     string(REPLACE "/" ";" str_short_segment_list "${shortened_qualifiers}")
-    string(JOIN "_" ${BUILD_STR_SHORT}
-           ${BUILD_STR_BOARD} ${str_short_segment_list} ${revision_string}
-    )
-    if(BUILD_STR_MERGE)
-      string(JOIN "_" variant_string ${BUILD_STR_BOARD} ${str_short_segment_list})
+    string(JOIN "_" full_short_string ${BUILD_STR_BOARD} ${str_short_segment_list} ${revision_string})
 
-      if(NOT "${variant_string}" IN_LIST ${BUILD_STR_SHORT})
-        list(APPEND ${BUILD_STR_SHORT} "${variant_string}")
-      endif()
+    if(BUILD_STR_MERGE)
+      # Build progressive list for shortened qualifiers
+      list(APPEND ${BUILD_STR_SHORT} "${BUILD_STR_BOARD}")
+      set(progressive "${BUILD_STR_BOARD}")
+      foreach(segment ${str_short_segment_list})
+        string(JOIN "_" progressive ${progressive} ${segment})
+        if(NOT "${progressive}" STREQUAL "${full_short_string}")
+          list(APPEND ${BUILD_STR_SHORT} "${progressive}")
+        endif()
+      endforeach()
+      list(APPEND ${BUILD_STR_SHORT} "${full_short_string}")
+    else()
+      set(${BUILD_STR_SHORT} "${full_short_string}")
     endif()
 
     if(BUILD_STR_REVERSE)
@@ -2877,8 +2891,13 @@ Relative paths are only allowed with `-D${ARGV1}=<path>`")
 
     if(ZFILE_KCONF)
       set(found_conf_files)
+      # For .conf files, only use the most specific match (first item after REVERSE).
+      # This prevents loading base board .conf when building for board variants.
+      list(SUBLIST kconf_filename_list 0 1 kconf_specific_list)
+      list(SUBLIST kconf_shortened_filename_list 0 1 kconf_shortened_specific_list)
+
       foreach(path ${ZFILE_CONF_FILES})
-        foreach(filename IN ZIP_LISTS kconf_filename_list kconf_shortened_filename_list)
+        foreach(filename IN ZIP_LISTS kconf_specific_list kconf_shortened_specific_list)
           foreach(i RANGE 1)
             if(NOT IS_ABSOLUTE filename_${i} AND DEFINED filename_${i})
               set(test_file_${i} ${path}/${filename_${i}})

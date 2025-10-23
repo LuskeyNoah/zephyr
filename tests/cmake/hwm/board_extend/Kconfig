@@ -12,4 +12,26 @@ config BASE_BOARD_SETTING
 	  '  qualifier: posix'
 	  '  inherit: 1'
 
+config SET_BY_NATIVE_SIM_NATIVE
+	bool "Should be set by the native_sim_native_defconfig file"
+	default n
+
+config SET_BY_NATIVE_SIM_NATIVE_64
+	bool "Should be set by the native_sim_native_64_defconfig file"
+	default n
+
+config SET_BY_NATIVE_SIM_NATIVE_64_TWO
+	bool "Should be set by the native_sim_native_64_two_defconfig file"
+	default n
+
+config SET_BY_NATIVE_SIM_NATIVE_32
+	bool "Set in the native_sim_native_32_defconfig file, so should remain unset"
+	default n
+
+config SET_BY_NATIVE_SI # intentionally missing 'M'
+	bool "Set in the native_si_defconfig file, so should remain unset"
+
+config SET_BY_NATIVE # intentionally missing 'SIM'
+	bool "Set in the native_defconfig file, so should remain unset"
+
 source "Kconfig.zephyr"
